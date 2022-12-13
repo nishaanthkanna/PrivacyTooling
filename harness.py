@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import tqdm
 from pyhessian import hessian
 import numpy as np
-
+from utils import progress_bar
 
 class TrainingHarness:
     """ Harness to run one epoch and log norms and hessian trace """
@@ -30,8 +30,7 @@ class TrainingHarness:
         train_loss = 0.0
         train_correct = 0
         total = 0
-        for data in self.train_dl:
-            ims, labels = data
+        for batch_idx, (ims, labels) in enumerate(self.train_dl):
             ims, labels = ims.to(self.device), labels.to(self.device)
 
             self.optimizer.zero_grad()
@@ -46,6 +45,8 @@ class TrainingHarness:
             train_correct += pred.eq(labels).sum().item()
             total += labels.size(0)
 
+            progress_bar(batch_idx, len(self.train_dl), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                         % (train_loss/(batch_idx+1), 100.*train_correct/total, train_correct, total))
         train_loss /= len(self.train_dl)
         train_acc = (train_correct / total) * 100
         self.scheduler.step()
@@ -58,8 +59,7 @@ class TrainingHarness:
         test_total = 0
         with torch.no_grad():
             predictions = []
-            for data in self.test_dl:
-                ims, labels = data
+            for batch_idx, (ims, labels) in enumerate(self.test_dl):
                 ims, labels = ims.to(self.device), labels.to(self.device)
                 outputs = self.net(ims)
                 loss = self.criterion(outputs, labels)
@@ -70,6 +70,9 @@ class TrainingHarness:
                 test_loss += loss.item()
                 test_correct += pred.eq(labels).sum().item()
                 test_total += labels.size(0)
+
+                progress_bar(batch_idx, len(self.test_dl), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                         % (test_loss/(batch_idx+1), 100.*test_correct/test_total, test_correct, test_total))
 
         test_loss /= len(self.test_dl)
         test_accuracy = (test_correct / test_total) * 100
