@@ -5,11 +5,11 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR
 import argparse
 import numpy as np
-from resnet import ResNet
-from data import get_dataloaders
-from harness import TrainingHarness
+from model.resnet import ResNet
+from dataloader.data_loader import get_dataloaders
+from harness.harness import TrainingHarness
 from mle_logging import MLELogger
-from utils import set_seed
+from utils.utils import set_seed
 from torchinfo import summary
 
 parser = argparse.ArgumentParser()
@@ -47,7 +47,7 @@ elif args.dataset == 'cifar100':
 
 layers = [2, 2, 2, 2]
 model = ResNet(layers, num_classes=NUM_CLASSES)
-print(summary(model, input_size=(args.batch_size, 3, 32, 32)))
+
 if args.optimizer == "adam":
     optimizer = Adam(model.parameters(), lr=args.lr)
 
@@ -77,8 +77,8 @@ log = MLELogger(time_to_track=['num_updates', 'num_epochs'],
 
 
 for epoch in range(num_epochs):
-    train_loss, train_acc = training_harness.train_one_epoch()
-    test_loss, test_acc, predictions = training_harness.test_model()
+    train_loss, train_acc = training_harness.train_epoch()
+    test_loss, test_acc, predictions = training_harness.valid_epoch()
     model_params = [p for p in training_harness.net.parameters() if p.grad is not None and p.requires_grad]
     
     if args.save_hessian:

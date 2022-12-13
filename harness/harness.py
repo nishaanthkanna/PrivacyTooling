@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import tqdm
 from pyhessian import hessian
 import numpy as np
-from utils import progress_bar
+from utils.utils import progress_bar
 
 class TrainingHarness:
     """ Harness to run one epoch and log norms and hessian trace """
@@ -25,7 +24,7 @@ class TrainingHarness:
 
         self.net.to(self.device)
 
-    def train_one_epoch(self):
+    def train_epoch(self):
         self.net.train()
         train_loss = 0.0
         train_correct = 0
@@ -52,7 +51,7 @@ class TrainingHarness:
         self.scheduler.step()
         return train_loss, train_acc
 
-    def test_model(self):
+    def valid_epoch(self):
         self.net.eval()
         test_loss = 0.0
         test_correct = 0
