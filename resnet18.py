@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import OneCycleLR
 import argparse
 import numpy as np
 from model.resnet import ResNet
@@ -29,7 +29,7 @@ parser.add_argument('--deterministic_torch', action='store_true')
 parser.add_argument('--data_dir', type=str, default=None)
 parser.add_argument('--l2', type=float, default=0.0)
 parser.add_argument('--dropout', action='store_true')
-parser.add_argument('--optimizer', type=str, choices=['adam', 'sgd'], default='adam')
+parser.add_argument('--optimizer', type=str, choices=['adam', 'sgd'], default='sgd')
 
 args = parser.parse_args()
 
@@ -50,8 +50,11 @@ model = ResNet(layers, num_classes=NUM_CLASSES)
 
 if args.optimizer == "adam":
     optimizer = Adam(model.parameters(), lr=args.lr)
+else:
+    optimizer = SGD(model.parameters(), lr=args.lr, momentum=0.99, weight_decay=5e-4)
 
-scheduler = MultiStepLR(optimizer, milestones=[50, 100], gamma=0.1)
+scheduler = OneCycleLR(optimizer, 0.1, epochs=args.epochs, total_steps=args.batch_size * args.epochs)
+
 
 train_dl, test_dl = get_dataloaders(args.dataset, args.batch_size)
 
